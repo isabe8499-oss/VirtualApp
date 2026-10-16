@@ -2,14 +2,14 @@ name: Build Debug APKs
 
 on:
   push:
-    branches: [ main]
+    branches: [ main ]
   pull_request:
-    branches: [ main]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -23,9 +23,14 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
-      - name: Install NDK 21.4.7075529
-        run: yes | sdkmanager "ndk;21.4.7075529" || true
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install required Android SDK and NDK
+        run: sdkmanager "platforms;android-34" "platforms;android-30" "build-tools;30.0.0" "ndk;21.4.7075529"
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -41,25 +46,12 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build debug APKs
-        run: ./gradlew assembleDebug -Dorg.gradle.java.home=$JAVA_HOME
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
 
-      - name: Upload Universal APK
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: VirtualApp-universal
-          path: app/build/outputs/apk/debug/*-universal.apk
-          retention-days: 14
-
-      - name: Upload 64-bit (arm64-v8a) APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: VirtualApp-arm64-v8a
-          path: app/build/outputs/apk/debug/*-arm64-v8a.apk
-          retention-days: 14
-
-      - name: Upload 32-bit (armeabi-v7a) APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: VirtualApp-armeabi-v7a
-          path: app/build/outputs/apk/debug/*-armeabi-v7a.apk
+          name: VirtualApp-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
           retention-days: 14
