@@ -3,8 +3,6 @@ name: Manual APK Build
 on:
   workflow_dispatch:
   push:
-    paths:
-      - '.github/workflows/build-manual.yml'
     branches: [ main ]
 
 permissions:
@@ -12,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,16 +24,17 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install required NDK and SDK components
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-34" "build-tools;30.0.0" "ndk;21.4.7075529"
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install required SDK and NDK components
+        run: sdkmanager "platforms;android-34" "platforms;android-30" "build-tools;30.0.0" "ndk;21.4.7075529"
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
       - name: Build debug APKs
-        run: ./gradlew --no-daemon assembleDebug -Dorg.gradle.java.home="$JAVA_HOME"
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
